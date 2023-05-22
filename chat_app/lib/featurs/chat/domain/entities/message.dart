@@ -1,11 +1,24 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Message {
-  late final String text;
-  final DateTime date;
+  final String fromName;
+  final String text;
+  final Timestamp date;
   final String from;
   final String to;
   final String messageId;
   String? deletedFrom;
+  bool isreplied;
+  String? repliedText;
+  bool isSent;
+  bool isReseved;
+
   Message({
+    this.isreplied = false,
+    this.repliedText,
+    this.isReseved = false,
+    this.isSent = false,
+    required this.fromName,
     required this.messageId,
     required this.text,
     required this.date,
@@ -16,10 +29,15 @@ class Message {
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
+      'isreplied': isreplied,
+      'repliedText': repliedText,
+      'isReseved': isReseved,
+      'isSent': isSent,
+      'fromName': fromName,
       'deletedFrom': deletedFrom,
       'messageId': messageId,
       'text': text,
-      'date': date.millisecondsSinceEpoch,
+      'date': date,
       'from': from,
       'to': to,
     };
@@ -27,10 +45,15 @@ class Message {
 
   factory Message.fromMap(Map<String, dynamic> map) {
     return Message(
+      repliedText: map['repliedText'],
+      isreplied: map['isreplied'] ?? false,
+      isReseved: map['isReseved'] ?? false,
+      isSent: map['isSent'] ?? false, //! not allowed to be null
+      fromName: map['fromName'] ?? '', //! not allowedto be null
       deletedFrom: map['deletedFrom'],
       messageId: map['messageId'] ?? '',
       text: map['text'] as String,
-      date: DateTime.fromMillisecondsSinceEpoch(map['date'] as int),
+      date: map['date'],
       from: map['from'] as String,
       to: map['to'] as String,
     );
