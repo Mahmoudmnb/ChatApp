@@ -1,9 +1,7 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:chat_app/featurs/auth/domain/entities/user.dart';
-
+import '../../../auth/domain/entities/user.dart';
 import '../providers/chat_provider.dart';
 
 class InputBottom extends StatelessWidget {
@@ -73,18 +71,33 @@ class InputBottom extends StatelessWidget {
                 icon: const Icon(Icons.face)),
             Expanded(
               child: TextFormField(
+                onChanged: (value) {
+                  context.read<ChatProvider>().setInputText = value;
+                },
                 keyboardType: TextInputType.multiline,
                 autofocus: true,
                 controller: context.watch<ChatProvider>().controller,
               ),
             ),
-            IconButton(
-                onPressed: () {
-                  context.read<ChatProvider>().editOrSendOnTab(chatId, freind);
-                },
-                icon: Icon(context.watch<ChatProvider>().editMode
-                    ? Icons.edit
-                    : Icons.send))
+            context.watch<ChatProvider>().inputText != ''
+                ? IconButton(
+                    onPressed: () {
+                      context
+                          .read<ChatProvider>()
+                          .editOrSendOnTab(chatId, freind);
+                    },
+                    icon: Icon(context.watch<ChatProvider>().editMode
+                        ? Icons.edit
+                        : Icons.send))
+                : Row(
+                    children: [
+                      IconButton(
+                          onPressed: () =>
+                              context.read<ChatProvider>().pickImage(chatId),
+                          icon: const Icon(Icons.attach_file_sharp)),
+                      IconButton(onPressed: () {}, icon: const Icon(Icons.mic))
+                    ],
+                  )
           ]),
         ],
       ),

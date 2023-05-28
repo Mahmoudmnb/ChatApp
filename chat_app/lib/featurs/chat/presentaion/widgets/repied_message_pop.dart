@@ -76,7 +76,8 @@ class RepliedMessagePop extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Text('${(message.date)}:${(message.date)}'),
+              Text(
+                  '${message.date.toDate().hour}:${message.date.toDate().minute}'),
               const SizedBox(width: 5),
               isme
                   ? message.isReseved == true

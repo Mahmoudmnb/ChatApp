@@ -1,12 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Message {
+  bool isDownloded;
+  String? senderPath;
+  String? reciverPath;
   final String fromName;
   final String text;
   final Timestamp date;
   final String from;
   final String to;
   final String messageId;
+  final String type;
   String? deletedFrom;
   bool isreplied;
   String? repliedText;
@@ -14,21 +18,29 @@ class Message {
   bool isReseved;
 
   Message({
-    this.isreplied = false,
-    this.repliedText,
-    this.isReseved = false,
-    this.isSent = false,
+    this.isDownloded = false,
+    this.senderPath,
+    this.reciverPath,
     required this.fromName,
-    required this.messageId,
     required this.text,
     required this.date,
     required this.from,
     required this.to,
+    required this.messageId,
+    required this.type,
     this.deletedFrom,
+    this.isreplied = false,
+    this.repliedText,
+    this.isSent = false,
+    this.isReseved = false,
   });
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
+      'isDownloded': isDownloded,
+      'senderPath': senderPath,
+      'reciverPath': reciverPath,
+      'type': type,
       'isreplied': isreplied,
       'repliedText': repliedText,
       'isReseved': isReseved,
@@ -45,6 +57,10 @@ class Message {
 
   factory Message.fromMap(Map<String, dynamic> map) {
     return Message(
+      reciverPath: map['reciverPath'],
+      senderPath: map['senderPath'],
+      isDownloded: map['isDownloded'],
+      type: map['type'],
       repliedText: map['repliedText'],
       isreplied: map['isreplied'] ?? false,
       isReseved: map['isReseved'] ?? false,

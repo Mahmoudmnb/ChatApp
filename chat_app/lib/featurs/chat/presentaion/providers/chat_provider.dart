@@ -1,29 +1,47 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/constant.dart';
 import '../../../auth/domain/entities/user.dart';
 import '../../domain/entities/message.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class ChatProvider extends ChangeNotifier {
   TextEditingController controller = TextEditingController();
   ScrollController scrollController = ScrollController();
   List<bool> selectedItems = [];
   String emojiText = '';
-
+  File? pickedImage;
   bool checkBoxKey = false;
   bool isReplied = false;
+  bool isConvertedMode = false;
   List<String> fromMeSelectedMessage = [];
   List<String> toMeSelectedMessage = [];
 
   get selectedItem => selectedItems;
-  List<String> copiedMessages = [];
+  List<Message> copiedMessages = [];
   Message? selectedMessage;
   bool _editMode = false;
   get editMode => _editMode;
   bool _isFaseMode = false;
   get isFaseMode => _isFaseMode;
+  String? _inputText = '';
+  get inputText => _inputText;
+  set setConvertedMode(bool value) {
+    isConvertedMode = value;
+    notifyListeners();
+  }
+
+  set setInputText(String value) {
+    _inputText = value;
+    notifyListeners();
+  }
+
   set setFaceMode(bool value) {
     _isFaseMode = value;
     notifyListeners();
@@ -77,7 +95,7 @@ class ChatProvider extends ChangeNotifier {
     if (isMainAppBar && !editMode) {
       checkBoxKey = false;
       copiedMessages = [];
-      copiedMessages.add(message.text);
+      copiedMessages.add(message);
       selectedMessage = message;
 
       isme
@@ -96,9 +114,9 @@ class ChatProvider extends ChangeNotifier {
         isme
             ? fromMeSelectedMessage.remove(message.messageId)
             : toMeSelectedMessage.remove(message.messageId);
-        copiedMessages.remove(message.text);
+        copiedMessages.remove(message);
       } else {
-        copiedMessages.add(message.text);
+        copiedMessages.add(message);
         isme ? selectedMessage = message : null;
         isme
             ? fromMeSelectedMessage.add(message.messageId)
@@ -130,15 +148,17 @@ class ChatProvider extends ChangeNotifier {
     } else {
       if (controller.text.isNotEmpty) {
         Message message = Message(
+            type: 'Message',
             isreplied: isReplied,
             repliedText: isReplied ? selectedMessage!.text : null,
             fromName: Constant.currentUsre.name,
             messageId: '',
             text: controller.text,
-            date: Timestamp.now(), // await NTP.now(),
+            date: Timestamp.now(),
             from: Constant.currentUsre.phoneNamber,
             to: friend.phoneNamber);
         controller.text = '';
+        _inputText = '';
         emojiText = '';
         cancelInReplyModeOnTab();
         var s = await FirebaseFirestore.instance
@@ -155,6 +175,7 @@ class ChatProvider extends ChangeNotifier {
         moveToEnd();
       }
     }
+    notifyListeners();
   }
 
   void moveToEnd() {
@@ -187,10 +208,12 @@ class ChatProvider extends ChangeNotifier {
 
   onEmojiSelected(category) {
     emojiText += category.emoji;
+    _inputText = emojiText;
     controller.value = TextEditingValue(
       text: emojiText,
       selection: TextSelection.collapsed(offset: emojiText.length),
     );
+    notifyListeners();
   }
 
   cancelOnTab() {
@@ -212,7 +235,7 @@ class ChatProvider extends ChangeNotifier {
   copyOnTab() {
     String clipText = '';
     for (var element in copiedMessages) {
-      clipText += element;
+      clipText += element.text;
       clipText += '      \n';
     }
     Clipboard.setData(ClipboardData(text: clipText));
@@ -336,6 +359,100 @@ class ChatProvider extends ChangeNotifier {
 
   cancelInReplyModeOnTab() {
     isReplied = false;
+    notifyListeners();
+  }
+
+  pickImage(String chatId) async {
+    ImagePicker picker = ImagePicker();
+    var r = await picker.pickImage(source: ImageSource.gallery);
+    if (r != null) {
+      pickedImage = File(r.path);
+    }
+
+    if (pickedImage != null) {
+      var comImage = await FlutterImageCompress.compressAndGetFile(
+          pickedImage!.absolute.path,
+          '/data/user/0/com.example.chat_app/cache/a.jpg');
+
+      File pickeImageFile = File(comImage!.path);
+
+      Message message = Message(
+          senderPath: pickedImage!.path,
+          type: 'Image',
+          isreplied: isReplied,
+          repliedText: isReplied ? selectedMessage!.text : null,
+          fromName: Constant.currentUsre.name,
+          messageId: '',
+          text: '',
+          date: Timestamp.now(),
+          from: Constant.currentUsre.phoneNamber,
+          to: friend!.phoneNamber);
+
+      var s = await FirebaseFirestore.instance
+          .collection('messages')
+          .doc(chatId)
+          .collection('msg')
+          .add(message.toJson());
+
+      FirebaseStorage.instance
+          .ref('chat')
+          .child('aaa')
+          .putFile(pickeImageFile)
+          .snapshotEvents
+          .listen((event) async {
+        if (event.state == TaskState.success) {
+          FirebaseFirestore.instance
+              .collection('messages')
+              .doc(chatId)
+              .collection('msg')
+              .doc(s.id)
+              .update({
+            'messageId': s.id,
+            'isSent': true,
+            'text': await event.ref.getDownloadURL()
+          });
+        }
+      });
+    }
+    moveToEnd();
+    notifyListeners();
+  }
+
+  convertMessageOnTab(BuildContext context) {
+    isConvertedMode = true;
+    setMainAppBar = true;
+    selectedItems = [];
+    fromMeSelectedMessage = [];
+    toMeSelectedMessage = [];
+    Navigator.of(context).pop();
+    notifyListeners();
+  }
+
+  sendConvertedMessage(String chatId) async {
+    for (Message element in copiedMessages) {
+      var message = Message(
+          type: 'Message',
+          fromName: element.fromName,
+          messageId: element.messageId,
+          text: element.text,
+          date: Timestamp.now(),
+          from: element.from,
+          to: element.to);
+      var s = await FirebaseFirestore.instance
+          .collection('messages')
+          .doc(chatId)
+          .collection('msg')
+          .add(message.toJson());
+      FirebaseFirestore.instance
+          .collection('messages')
+          .doc(chatId)
+          .collection('msg')
+          .doc(s.id)
+          .update({'messageId': s.id, 'isSent': true});
+      moveToEnd();
+    }
+    isConvertedMode = false;
+
     notifyListeners();
   }
 }

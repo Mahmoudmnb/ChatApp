@@ -18,6 +18,14 @@ class ChatePage extends StatefulWidget {
 
 class _ChatePageState extends State<ChatePage> {
   @override
+  void initState() {
+    if (context.read<ChatProvider>().isConvertedMode) {
+      context.read<ChatProvider>().sendConvertedMessage(widget.chatId);
+    }
+    super.initState();
+  }
+
+  @override
   void dispose() {
     // context.read<ChatProvider>().controller.dispose();
     // context.read<ChatProvider>().scrollController.dispose();

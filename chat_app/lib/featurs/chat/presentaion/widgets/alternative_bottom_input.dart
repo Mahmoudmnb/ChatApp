@@ -39,9 +39,11 @@ class AlternativeBottomInput extends StatelessWidget {
                   icon: const Icon(Icons.arrow_back))
               : const SizedBox.shrink(),
           TextButton.icon(
-              onPressed: () {},
+              onPressed: () {
+                context.read<ChatProvider>().convertMessageOnTab(context);
+              },
               label: const Text(
-                'answer',
+                'Convert',
                 style: TextStyle(fontSize: 20),
               ),
               icon: const Icon(Icons.arrow_forward)),

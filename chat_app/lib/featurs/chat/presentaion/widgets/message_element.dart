@@ -1,3 +1,4 @@
+import 'package:chat_app/featurs/chat/presentaion/widgets/image_pop.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -54,14 +55,18 @@ class MessageRow extends StatelessWidget {
                     alignment: message.from == friend.phoneNamber
                         ? Alignment.centerLeft
                         : Alignment.centerRight,
-                    child: message.isreplied
-                        ? RepliedMessagePop(
-                            chatId: chatId, isme: isme, message: message)
-                        : MessagePop(
-                            chatId: chatId,
-                            isme: isme,
+                    child: message.type == 'Image'
+                        ? ImagePop(
                             message: message,
-                          )),
+                          )
+                        : message.isreplied
+                            ? RepliedMessagePop(
+                                chatId: chatId, isme: isme, message: message)
+                            : MessagePop(
+                                chatId: chatId,
+                                isme: isme,
+                                message: message,
+                              )),
               ),
             ],
           ),
