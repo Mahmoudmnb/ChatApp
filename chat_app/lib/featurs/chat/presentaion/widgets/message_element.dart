@@ -57,6 +57,7 @@ class MessageRow extends StatelessWidget {
                         : Alignment.centerRight,
                     child: message.type == 'Image'
                         ? ImagePop(
+                            chatId: chatId,
                             message: message,
                           )
                         : message.isreplied

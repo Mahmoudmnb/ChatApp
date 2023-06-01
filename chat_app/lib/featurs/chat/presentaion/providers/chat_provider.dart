@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -12,6 +13,8 @@ import '../../domain/entities/message.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class ChatProvider extends ChangeNotifier {
+  final Map<String, double> _imageProgressValue = {};
+  get imgeProgressValue => _imageProgressValue;
   TextEditingController controller = TextEditingController();
   ScrollController scrollController = ScrollController();
   List<bool> selectedItems = [];
@@ -363,6 +366,7 @@ class ChatProvider extends ChangeNotifier {
   }
 
   pickImage(String chatId) async {
+    pickedImage = null;
     ImagePicker picker = ImagePicker();
     var r = await picker.pickImage(source: ImageSource.gallery);
     if (r != null) {
@@ -370,9 +374,10 @@ class ChatProvider extends ChangeNotifier {
     }
 
     if (pickedImage != null) {
+      int nameOfImage = Random().nextInt(1000000) + 1000;
       var comImage = await FlutterImageCompress.compressAndGetFile(
           pickedImage!.absolute.path,
-          '/data/user/0/com.example.chat_app/cache/a.jpg');
+          '/data/user/0/com.example.chat_app/cache/$nameOfImage.jpg');
 
       File pickeImageFile = File(comImage!.path);
 
@@ -396,7 +401,7 @@ class ChatProvider extends ChangeNotifier {
 
       FirebaseStorage.instance
           .ref('chat')
-          .child('aaa')
+          .child(nameOfImage.toString())
           .putFile(pickeImageFile)
           .snapshotEvents
           .listen((event) async {
@@ -411,6 +416,7 @@ class ChatProvider extends ChangeNotifier {
             'isSent': true,
             'text': await event.ref.getDownloadURL()
           });
+          _imageProgressValue[s.id] = 0;
         }
       });
     }
@@ -453,6 +459,16 @@ class ChatProvider extends ChangeNotifier {
     }
     isConvertedMode = false;
 
+    notifyListeners();
+  }
+
+  imgageProgressDownload(double progress, String imageId) {
+    _imageProgressValue[imageId] = progress;
+    notifyListeners();
+  }
+
+  onDoneImageDownlad(String imageId) {
+    _imageProgressValue.remove(imageId);
     notifyListeners();
   }
 }

@@ -1,32 +1,61 @@
 import 'dart:io';
+import 'dart:math';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:easy_image_viewer/easy_image_viewer.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_download_manager/flutter_download_manager.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-
 import '../../../../core/constant.dart';
 import '../../domain/entities/message.dart';
 
-class ImagePop extends StatelessWidget {
+class ImagePop extends StatefulWidget {
   final Message message;
+  final String chatId;
   const ImagePop({
     Key? key,
     required this.message,
+    required this.chatId,
   }) : super(key: key);
 
   @override
+  State<ImagePop> createState() => _ImagePopState();
+}
+
+class _ImagePopState extends State<ImagePop> {
+  DownloadTask? task;
+  DownloadManager downloadManager = DownloadManager();
+  int nameOfImage = 0;
+  @override
   Widget build(BuildContext context) {
-    bool isMe = message.from == Constant.currentUsre.phoneNamber;
-    if (!isMe && message.text != '') {
-      //!fdfdfdfdfdf
-      // FileDownloader.downloadFile(
-      //     name: 'MyChat/mnb.jpg',
-      //     onProgress: (fileName, progress) => print(progress),
-      //     onDownloadError: (errorMessage) => print(errorMessage),
-      //     onDownloadCompleted: (path) => print(path),
-      //     url:
-      //         'https://firebasestorage.googleapis.com/v0/b/chat-app-76800.appspot.com/o/chat%2Faaa?alt=media&token=f5ec409e-c5f9-4160-a961-4d231eab610e');
-    }
-    return Container(
+    bool isMe = widget.message.from == Constant.currentUsre.phoneNamber;
+    return GestureDetector(
+      onLongPress: () {
+        if (task != null && task!.status.value == DownloadStatus.completed) {
+          setState(() {});
+        }
+        print(task != null ? task!.status.value : '');
+      },
+      onTap: () {
+        if (widget.message.reciverPath == null &&
+            widget.message.text != '' &&
+            !isMe) {
+          downloadImage(widget.message);
+        }
+
+        if (isMe && widget.message.senderPath != null) {
+          var image = Image.file(File(widget.message.senderPath!)).image;
+          showImageViewer(context, image, onViewerDismissed: () {
+            print("dismissed");
+          });
+        } else if (!isMe && widget.message.reciverPath != null) {
+          var image = Image.file(File(widget.message.reciverPath!)).image;
+          showImageViewer(context, image, onViewerDismissed: () {
+            print("dismissed");
+          });
+        }
+      },
+      child: Container(
         height: 150,
         width: 150,
         decoration: BoxDecoration(
@@ -37,28 +66,65 @@ class ImagePop extends StatelessWidget {
                 width: 150,
                 decoration: BoxDecoration(
                   image: DecorationImage(
-                      image: FileImage(
-                          File(message.senderPath ?? 'assets/images/1.jpg'))),
+                      image: FileImage(File(
+                          widget.message.senderPath ?? 'assets/images/1.jpg'))),
                 ),
-                child: message.text == ''
+                child: widget.message.text == ''
                     ? const SpinKitCircle(
                         color: Colors.purple,
                       )
                     : const SizedBox.shrink(),
               )
-            : Container(
+            : SizedBox(
                 height: 150,
                 width: 150,
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                      image: FileImage(
-                          File(message.reciverPath ?? 'assets/images/1.jpg'))),
-                ),
-                child: message.text == ''
-                    ? const SpinKitCircle(
-                        color: Colors.purple,
-                      )
-                    : const SizedBox.shrink(),
-              ));
+                child: Stack(
+                  children: [
+                    widget.message.reciverPath == null
+                        ? const SizedBox.shrink()
+                        : Image.file(File(widget.message.reciverPath!)),
+                    widget.message.reciverPath == null &&
+                            task != null &&
+                            task!.status.value != DownloadStatus.completed
+                        ? ValueListenableBuilder(
+                            valueListenable: task!.progress,
+                            builder: (context, value, child) {
+                              if (value == 1.0) {
+                                FirebaseFirestore.instance
+                                    .collection('messages')
+                                    .doc(widget.chatId)
+                                    .collection('msg')
+                                    .doc(widget.message.messageId)
+                                    .update({
+                                  'reciverPath':
+                                      '/storage/emulated/0/Download/MyChat/$nameOfImage.jpg'
+                                });
+                              }
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  value: value,
+                                ),
+                              );
+                            },
+                          )
+                        : const SizedBox.shrink(),
+                  ],
+                )),
+      ),
+    );
+  }
+
+  downloadImage(Message message) async {
+    nameOfImage = Random().nextInt(1000000) + 1000;
+    bool isMe = message.from == Constant.currentUsre.phoneNamber;
+    if (!isMe && message.reciverPath == null && message.text != '') {
+      task = await downloadManager.addDownload(
+          message.text, '/storage/emulated/0/Download/MyChat/$nameOfImage.jpg');
+      setState(() {});
+
+      downloadManager.getDownload(message.text);
+      downloadManager.whenDownloadComplete(message.text);
+    }
+    print(task?.status.value);
   }
 }

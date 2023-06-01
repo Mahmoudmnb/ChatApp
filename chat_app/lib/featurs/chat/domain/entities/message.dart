@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Message {
+  bool isLonding;
+  double progressDownloading;
   bool isDownloded;
   String? senderPath;
   String? reciverPath;
@@ -18,6 +20,8 @@ class Message {
   bool isReseved;
 
   Message({
+    this.progressDownloading = 0,
+    this.isLonding = false,
     this.isDownloded = false,
     this.senderPath,
     this.reciverPath,
