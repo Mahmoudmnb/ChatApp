@@ -44,3 +44,27 @@ class _MyAppState extends State<MyApp> {
     );
   }
 }
+
+class Mnb extends StatelessWidget {
+  const Mnb({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            const Expanded(child: Text('data')),
+            Container(
+              color: Colors.teal,
+              child: const Text(
+                'jfdkljfldjfd',
+                style: TextStyle(fontSize: 50),
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}

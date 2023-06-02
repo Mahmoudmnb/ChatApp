@@ -34,10 +34,7 @@ class _ChatePageState extends State<ChatePage> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-      },
+    return SafeArea(
       child: WillPopScope(
         onWillPop: () {
           return context.read<ChatProvider>().willPopScopeOnTab();
@@ -49,8 +46,12 @@ class _ChatePageState extends State<ChatePage> {
             appBar: context.watch<ChatProvider>().isMainAppBar
                 ? mainAppBar(widget.friend.name)
                 : aternativeAppBar(),
-            body: SafeArea(
+            body: GestureDetector(
+              onTap: () {
+                FocusScope.of(context).unfocus();
+              },
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Expanded(
                       child: StreamBuilder(
@@ -63,6 +64,8 @@ class _ChatePageState extends State<ChatePage> {
                     builder: (con, snapshot) {
                       if (snapshot.hasData) {
                         return ListView.builder(
+                          shrinkWrap: true,
+                          physics: const BouncingScrollPhysics(),
                           controller:
                               context.watch<ChatProvider>().scrollController,
                           reverse: true,
