@@ -82,6 +82,8 @@ class ChatProvider extends ChangeNotifier {
     if (first.docs.isEmpty && second.docs.isEmpty) {
       var chatId = await FirebaseFirestore.instance.collection('messages').add({
         'from': Constant.currentUsre.phoneNamber,
+        'fromName': Constant.currentUsre.name,
+        'toName': friend!.name,
         'to': friend!.phoneNamber
       });
       return Future.value(chatId.id);
@@ -392,8 +394,8 @@ class ChatProvider extends ChangeNotifier {
     print(decodedImage.height);
     if (pickedImage != null) {
       Message message = Message(
-          imageHeight: decodedImage.height *1.0,
-          imageWidth: decodedImage.width *1.0,
+          imageHeight: decodedImage.height * 1.0,
+          imageWidth: decodedImage.width * 1.0,
           senderPath: pickedImage!.path,
           type: 'Image',
           isreplied: isReplied,

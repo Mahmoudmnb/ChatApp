@@ -195,15 +195,15 @@ class _ImagePopState extends State<ImagePop> {
                         ],
                       ),
                     ),
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: IconButton(
-                          onPressed: () {
-                            print('save image');
-                          },
-                          icon: const Icon(Icons.more_vert)),
-                    ),
+                    // Positioned(
+                    //   top: 0,
+                    //   right: 0,
+                    //   child: IconButton(
+                    //       onPressed: () {
+                    //         //  GallerySaver.saveImage(widget.message.reciverPath!);
+                    //       },
+                    //       icon: const Icon(Icons.save_alt)),
+                    // ),
                   ],
                 )));
   }
