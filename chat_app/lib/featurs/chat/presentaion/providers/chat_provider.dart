@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -13,6 +12,7 @@ import '../../domain/entities/message.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class ChatProvider extends ChangeNotifier {
+  FocusNode focusNode = FocusNode(debugLabel: 'mnb');
   final Map<String, double> _imageProgressValue = {};
   get imgeProgressValue => _imageProgressValue;
   TextEditingController controller = TextEditingController();
@@ -187,15 +187,16 @@ class ChatProvider extends ChangeNotifier {
   }
 
   willPopScopeOnTab() {
-    //! prevent app from apdating the page on keyboard open
-    //! open keyboard on edit
     if (!isMainAppBar) {
       setMainAppBar = true;
       selectedItems = [];
       fromMeSelectedMessage = [];
       toMeSelectedMessage = [];
+      setFaceMode = false;
       return Future.value(false);
     } else if (editMode) {
+      setFaceMode = false;
+
       _editMode = false;
       controller.text = '';
       selectedItems = [];
@@ -204,7 +205,10 @@ class ChatProvider extends ChangeNotifier {
       return Future.value(false);
     } else if (isReplied) {
       cancelInReplyModeOnTab();
+    } else if (_isFaseMode) {
+      setFaceMode = !_isFaseMode;
     } else {
+      setFaceMode = false;
       return Future.value(true);
     }
   }
@@ -226,13 +230,15 @@ class ChatProvider extends ChangeNotifier {
     toMeSelectedMessage = [];
   }
 
-  editOnTab() {
+  Future<void> editOnTab(BuildContext context) async {
+    //* open keyboard on edit
     _editMode = true;
     setMainAppBar = true;
     controller.value = TextEditingValue(
       text: selectedMessage!.text,
       selection: TextSelection.collapsed(offset: selectedMessage!.text.length),
     );
+    FocusScope.of(context).requestFocus(focusNode);
   }
 
   copyOnTab() {
@@ -261,6 +267,7 @@ class ChatProvider extends ChangeNotifier {
             .update({'deletedFrom': Constant.currentUsre.phoneNamber});
       } else {
         selectedMessage.delete();
+        FirebaseStorage.instance.ref('chat').child(element).delete();
       }
     }
     if (fromMeSelectedMessage.isNotEmpty) {
@@ -328,6 +335,7 @@ class ChatProvider extends ChangeNotifier {
                 .doc(element);
             if (value == true) {
               selectedMessage.delete();
+              FirebaseStorage.instance.ref('chat').child(element).delete();
             } else {
               var s = await selectedMessage.get();
               if (s.data()!['deletedFrom'] == null) {
@@ -335,6 +343,7 @@ class ChatProvider extends ChangeNotifier {
                     .update({'deletedFrom': Constant.currentUsre.phoneNamber});
               } else {
                 selectedMessage.delete();
+                FirebaseStorage.instance.ref('chat').child(element).delete();
               }
             }
           }
@@ -348,8 +357,13 @@ class ChatProvider extends ChangeNotifier {
   }
 
   emojiOnTab(BuildContext context) {
-    FocusScope.of(context).unfocus();
+    if (!_isFaseMode) {
+      FocusScope.of(context).unfocus();
+    } else {
+      FocusScope.of(context).requestFocus(focusNode);
+    }
     setFaceMode = !isFaseMode;
+    notifyListeners();
   }
 
   replyOnTab() {
@@ -372,16 +386,14 @@ class ChatProvider extends ChangeNotifier {
     if (r != null) {
       pickedImage = File(r.path);
     }
-
+    var decodedImage =
+        await decodeImageFromList(pickedImage!.readAsBytesSync());
+    print(decodedImage.width);
+    print(decodedImage.height);
     if (pickedImage != null) {
-      int nameOfImage = Random().nextInt(1000000) + 1000;
-      var comImage = await FlutterImageCompress.compressAndGetFile(
-          pickedImage!.absolute.path,
-          '/data/user/0/com.example.chat_app/cache/$nameOfImage.jpg');
-
-      File pickeImageFile = File(comImage!.path);
-
       Message message = Message(
+          imageHeight: decodedImage.height *1.0,
+          imageWidth: decodedImage.width *1.0,
           senderPath: pickedImage!.path,
           type: 'Image',
           isreplied: isReplied,
@@ -392,16 +404,19 @@ class ChatProvider extends ChangeNotifier {
           date: Timestamp.now(),
           from: Constant.currentUsre.phoneNamber,
           to: friend!.phoneNamber);
-
       var s = await FirebaseFirestore.instance
           .collection('messages')
           .doc(chatId)
           .collection('msg')
           .add(message.toJson());
+      var comImage = await FlutterImageCompress.compressAndGetFile(
+          pickedImage!.absolute.path,
+          '/data/user/0/com.example.chat_app/cache/${s.id}.jpg');
 
+      File pickeImageFile = File(comImage!.path);
       FirebaseStorage.instance
           .ref('chat')
-          .child(nameOfImage.toString())
+          .child(s.id)
           .putFile(pickeImageFile)
           .snapshotEvents
           .listen((event) async {

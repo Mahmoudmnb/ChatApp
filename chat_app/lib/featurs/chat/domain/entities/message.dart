@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Message {
+  double imageHeight;
+  double imageWidth;
+  final String nameOfImage;
   bool isLonding;
   double progressDownloading;
   bool isDownloded;
@@ -20,6 +23,9 @@ class Message {
   bool isReseved;
 
   Message({
+    this.imageHeight = 0,
+    this.imageWidth = 0,
+    this.nameOfImage = '',
     this.progressDownloading = 0,
     this.isLonding = false,
     this.isDownloded = false,
@@ -41,6 +47,9 @@ class Message {
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
+      'imageHeight': imageHeight,
+      'imageWidth': imageWidth,
+      'nameOfImage': nameOfImage,
       'isDownloded': isDownloded,
       'senderPath': senderPath,
       'reciverPath': reciverPath,
@@ -61,6 +70,9 @@ class Message {
 
   factory Message.fromMap(Map<String, dynamic> map) {
     return Message(
+      imageHeight: map['imageHeight'],
+      imageWidth: map['imageWidth'],
+      nameOfImage: map['nameOfImage'] ?? '',
       reciverPath: map['reciverPath'],
       senderPath: map['senderPath'],
       isDownloded: map['isDownloded'],

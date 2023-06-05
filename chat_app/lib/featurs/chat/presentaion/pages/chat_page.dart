@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/constant.dart';
@@ -19,6 +20,7 @@ class ChatePage extends StatefulWidget {
 class _ChatePageState extends State<ChatePage> {
   @override
   void initState() {
+    //? init the controlars
     if (context.read<ChatProvider>().isConvertedMode) {
       context.read<ChatProvider>().sendConvertedMessage(widget.chatId);
     }
@@ -64,7 +66,7 @@ class _ChatePageState extends State<ChatePage> {
                     builder: (con, snapshot) {
                       if (snapshot.hasData) {
                         return ListView.builder(
-                          shrinkWrap: true,
+                          padding: const EdgeInsets.all(5),
                           physics: const BouncingScrollPhysics(),
                           controller:
                               context.watch<ChatProvider>().scrollController,
@@ -123,8 +125,19 @@ class _ChatePageState extends State<ChatePage> {
 
   AppBar mainAppBar(String name) => AppBar(
         actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.phone)),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert))
+          IconButton(
+              onPressed: () async {
+                var p = await getApplicationDocumentsDirectory();
+                print(p.absolute.path);
+              },
+              icon: const Icon(Icons.phone)),
+          DropdownButton(
+            icon: const Icon(Icons.more_vert),
+            onChanged: (value) {
+              print('object');
+            },
+            items: const [DropdownMenuItem(child: Text('data'))],
+          ),
         ],
         title: Row(
           children: [
@@ -148,7 +161,7 @@ class _ChatePageState extends State<ChatePage> {
                   context.read<ChatProvider>().fromMeSelectedMessage.length == 1
               ? IconButton(
                   onPressed: () {
-                    context.read<ChatProvider>().editOnTab();
+                    context.read<ChatProvider>().editOnTab(context);
                   },
                   icon: const Icon(Icons.edit))
               : const SizedBox.shrink(),

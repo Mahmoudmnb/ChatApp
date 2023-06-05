@@ -5,6 +5,7 @@ import '../../../auth/domain/entities/user.dart';
 import '../providers/chat_provider.dart';
 
 class InputBottom extends StatelessWidget {
+  static var focusScope = FocusNode();
   final String chatId;
   final UserEntity freind;
   const InputBottom({
@@ -17,7 +18,6 @@ class InputBottom extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-//      height: 100,
       color: Colors.purple[200],
       child: Column(
         children: [
@@ -72,11 +72,12 @@ class InputBottom extends StatelessWidget {
                 icon: const Icon(Icons.face)),
             Expanded(
               child: TextFormField(
+                autocorrect: true,
+                focusNode: focusScope,
                 onChanged: (value) {
                   context.read<ChatProvider>().setInputText = value;
                 },
                 keyboardType: TextInputType.multiline,
-                autofocus: true,
                 controller: context.watch<ChatProvider>().controller,
               ),
             ),

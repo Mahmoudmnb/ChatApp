@@ -10,7 +10,7 @@ class EmojiPickerBuilde extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: MediaQuery.of(context).size.height * 0.45,
+      height: 275, //! modgy high for another devices
       child: EmojiPicker(
         config: const Config(
           columns: 7,

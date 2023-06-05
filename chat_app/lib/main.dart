@@ -1,5 +1,7 @@
+import 'package:chat_app/core/constant.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'featurs/auth/presentaion/pages/auth_page.dart';
@@ -12,6 +14,7 @@ Future<void> main(List<String> args) async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  Constant.localPath = await getApplicationDocumentsDirectory();
   runApp(
     MultiProvider(
       providers: [
@@ -41,30 +44,6 @@ class _MyAppState extends State<MyApp> {
       theme: ThemeData(primaryColor: Colors.orangeAccent),
       debugShowCheckedModeBanner: false,
       home: const AuthPage(),
-    );
-  }
-}
-
-class Mnb extends StatelessWidget {
-  const Mnb({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            const Expanded(child: Text('data')),
-            Container(
-              color: Colors.teal,
-              child: const Text(
-                'jfdkljfldjfd',
-                style: TextStyle(fontSize: 50),
-              ),
-            )
-          ],
-        ),
-      ),
     );
   }
 }
