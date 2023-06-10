@@ -12,7 +12,7 @@ class MessageRow extends StatelessWidget {
   final int index;
   final bool isme;
   final UserEntity friend;
-  final Message message;
+  final MessageModel message;
   final String chatId;
 
   const MessageRow({

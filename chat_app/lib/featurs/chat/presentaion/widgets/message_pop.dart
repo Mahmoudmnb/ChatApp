@@ -5,7 +5,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 class MessagePop extends StatelessWidget {
   final bool isme;
-  final Message message;
+  final MessageModel message;
   final String chatId;
   const MessagePop({
     Key? key,

@@ -1,14 +1,17 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:chat_app/featurs/chat/domain/entities/message.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 
 import '../../../../core/constant.dart';
 import '../../../auth/domain/entities/user.dart';
-import '../../domain/entities/message.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class ChatProvider extends ChangeNotifier {
@@ -27,8 +30,8 @@ class ChatProvider extends ChangeNotifier {
   List<String> toMeSelectedMessage = [];
 
   get selectedItem => selectedItems;
-  List<Message> copiedMessages = [];
-  Message? selectedMessage;
+  List<MessageModel> copiedMessages = [];
+  MessageModel? selectedMessage;
   bool _editMode = false;
   get editMode => _editMode;
   bool _isFaseMode = false;
@@ -81,6 +84,8 @@ class ChatProvider extends ChangeNotifier {
         .get();
     if (first.docs.isEmpty && second.docs.isEmpty) {
       var chatId = await FirebaseFirestore.instance.collection('messages').add({
+        'fromToken': Constant.currentUsre.token,
+        'toToken': friend!.token,
         'from': Constant.currentUsre.phoneNamber,
         'fromName': Constant.currentUsre.name,
         'toName': friend!.name,
@@ -96,7 +101,7 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
-  onLongPressMessage(Message message, bool isme, int index) {
+  onLongPressMessage(MessageModel message, bool isme, int index) {
     if (isMainAppBar && !editMode) {
       checkBoxKey = false;
       copiedMessages = [];
@@ -112,7 +117,7 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
-  onSingleTabMessage(int index, bool isme, Message message, context) {
+  onSingleTabMessage(int index, bool isme, MessageModel message, context) {
     if (!isMainAppBar) {
       if (selectedItem[index]) {
         setSelectedItem(false, index);
@@ -152,7 +157,7 @@ class ChatProvider extends ChangeNotifier {
       emojiText = '';
     } else {
       if (controller.text.isNotEmpty) {
-        Message message = Message(
+        MessageModel message = MessageModel(
             type: 'Message',
             isreplied: isReplied,
             repliedText: isReplied ? selectedMessage!.text : null,
@@ -393,7 +398,7 @@ class ChatProvider extends ChangeNotifier {
     print(decodedImage.width);
     print(decodedImage.height);
     if (pickedImage != null) {
-      Message message = Message(
+      MessageModel message = MessageModel(
           imageHeight: decodedImage.height * 1.0,
           imageWidth: decodedImage.width * 1.0,
           senderPath: pickedImage!.path,
@@ -452,8 +457,8 @@ class ChatProvider extends ChangeNotifier {
   }
 
   sendConvertedMessage(String chatId) async {
-    for (Message element in copiedMessages) {
-      var message = Message(
+    for (MessageModel element in copiedMessages) {
+      var message = MessageModel(
           type: 'Message',
           fromName: element.fromName,
           messageId: element.messageId,
@@ -487,5 +492,35 @@ class ChatProvider extends ChangeNotifier {
   onDoneImageDownlad(String imageId) {
     _imageProgressValue.remove(imageId);
     notifyListeners();
+  }
+
+  void sendPushMessage(String body, String title, String token) async {
+    try {
+      var s = await http.post(
+        Uri.parse('https://fcm.googleapis.com/fcm/send'),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization':
+              'key=AAAApisdxjw:APA91bGy4m2H8sUXgHbDIuof13KaMqTjapWYf15Gcmd1-Z1xeA3Y858rUaoojcGh6lii9-p9wS6aMacQgxzVYqK9-bFPpQyf7QfrlgNOyyhkEFMM6_1iFyFMX_rHp1FZiq7gHf76IbJA'
+        },
+        body: jsonEncode(
+          <String, dynamic>{
+            'notification': <String, dynamic>{
+              'body': body,
+              'title': title,
+            },
+            'priority': 'high',
+            'data': <String, dynamic>{
+              'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+              'id': '1',
+              'status': 'done'
+            },
+            "to": token,
+          },
+        ),
+      );
+    } catch (e) {
+      print("error push notification");
+    }
   }
 }

@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class Message {
+class MessageModel {
   double imageHeight;
   double imageWidth;
   final String nameOfImage;
@@ -22,7 +22,7 @@ class Message {
   bool isSent;
   bool isReseved;
 
-  Message({
+  MessageModel({
     this.imageHeight = 0,
     this.imageWidth = 0,
     this.nameOfImage = '',
@@ -68,8 +68,8 @@ class Message {
     };
   }
 
-  factory Message.fromMap(Map<String, dynamic> map) {
-    return Message(
+  factory MessageModel.fromMap(Map<String, dynamic> map) {
+    return MessageModel(
       imageHeight: map['imageHeight'],
       imageWidth: map['imageWidth'],
       nameOfImage: map['nameOfImage'] ?? '',
@@ -93,6 +93,6 @@ class Message {
 
   Map<String, dynamic> toJson() => toMap();
 
-  factory Message.fromJson(Map<String, dynamic> source) =>
-      Message.fromMap(source);
+  factory MessageModel.fromJson(Map<String, dynamic> source) =>
+      MessageModel.fromMap(source);
 }

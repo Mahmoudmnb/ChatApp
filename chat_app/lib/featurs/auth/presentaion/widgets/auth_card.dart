@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/constant.dart';
@@ -62,18 +63,28 @@ class AuthCard extends StatelessWidget {
                         .collection('users')
                         .doc(numberCon.text)
                         .get();
+                String? token = await FirebaseMessaging.instance.getToken();
+
                 if (isFound.data() == null) {
                   await FirebaseFirestore.instance
                       .collection('users')
                       .doc(numberCon.text)
-                      .set({'name': nameCon.text, 'number': numberCon.text});
+                      .set({
+                    'name': nameCon.text,
+                    'number': numberCon.text,
+                    'token': token
+                  });
                 }
-                Constant.currentUsre =
-                    UserEntity(name: nameCon.text, phoneNamber: numberCon.text);
+                Constant.currentUsre = UserEntity(
+                    name: nameCon.text,
+                    phoneNamber: numberCon.text,
+                    token: token!);
                 Navigator.of(context).push(MaterialPageRoute(
                   builder: (context) => HomePage(
                     user: UserEntity(
-                        name: nameCon.text, phoneNamber: numberCon.text),
+                        token: token,
+                        name: nameCon.text,
+                        phoneNamber: numberCon.text),
                   ),
                 ));
               }

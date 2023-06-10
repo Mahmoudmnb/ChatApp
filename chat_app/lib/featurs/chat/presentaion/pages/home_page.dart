@@ -1,6 +1,8 @@
 import 'package:chat_app/core/constant.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 
 import '../../../auth/domain/entities/user.dart';
@@ -17,6 +19,16 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+ late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+  @override
+  void initState() {
+    flutterLocalNotificationsPlugin = 
+        FlutterLocalNotificationsPlugin();
+    getPermision();
+    initInfo();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     var data = FirebaseFirestore.instance
@@ -26,7 +38,14 @@ class _HomePageState extends State<HomePage> {
       appBar: !context.watch<ChatProvider>().isConvertedMode
           ? AppBar(
               title: const Text('Chat App'),
-              actions: const [Icon(Icons.search)],
+              actions: [
+                IconButton(
+                    onPressed: () {
+                      context.read<ChatProvider>().sendPushMessage(
+                          'ho', 'how are you ', Constant.currentUsre.token);
+                    },
+                    icon: const Icon(Icons.search))
+              ],
             )
           : AppBar(
               title: const Text('convert to ...'),
@@ -70,6 +89,13 @@ class _HomePageState extends State<HomePage> {
                             ),
                             onTap: () async {
                               Map<String, dynamic> map = {
+                                'token': snapshot.data!.docs[index]
+                                            .data()['toName'] ==
+                                        Constant.currentUsre.name
+                                    ? snapshot.data!.docs[index]
+                                        .data()['fromToken']
+                                    : snapshot.data!.docs[index]
+                                        .data()['toToken'],
                                 'name': snapshot.data!.docs[index]
                                             .data()['toName'] ==
                                         Constant.currentUsre.name
@@ -159,5 +185,55 @@ class _HomePageState extends State<HomePage> {
           }),
       drawer: const Drawer(),
     );
+  }
+
+  void initInfo() {
+    var androidSettings =
+        const AndroidInitializationSettings('@mipmap/ic_launcher');
+    var settings = InitializationSettings(android: androidSettings);
+
+    flutterLocalNotificationsPlugin.initialize(
+      settings,
+      onDidReceiveNotificationResponse: (details) => print('on click'),
+      onDidReceiveBackgroundNotificationResponse: (details) => print('object'),
+    );
+    FirebaseMessaging.onMessage.listen((event) {
+      print(event);
+      BigTextStyleInformation bigTextStyleInformation = BigTextStyleInformation(
+        event.notification!.body.toString(),
+        htmlFormatBigText: true,
+        contentTitle: event.notification!.title.toString(),
+        htmlFormatContent: true,
+      );
+      AndroidNotificationDetails androidNotificationDetails =
+          AndroidNotificationDetails(
+        'dbfood',
+        'dbfood',
+        importance: Importance.high,
+        styleInformation: bigTextStyleInformation,
+        priority: Priority.high,
+        playSound: true,
+      );
+      NotificationDetails details =
+          NotificationDetails(android: androidNotificationDetails);
+      flutterLocalNotificationsPlugin.show(
+          0, event.notification!.title, event.notification!.body, details,
+          payload: event.data['title']);
+      print('event');
+    });
+  }
+
+  getPermision() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+    NotificationSettings settings = await messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
+    print('User granted permission: ${settings.authorizationStatus}');
   }
 }

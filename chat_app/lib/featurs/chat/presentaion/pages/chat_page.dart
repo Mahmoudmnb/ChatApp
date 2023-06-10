@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/constant.dart';
@@ -42,6 +41,7 @@ class _ChatePageState extends State<ChatePage> {
           return context.read<ChatProvider>().willPopScopeOnTab();
         },
         child: Scaffold(
+            backgroundColor: Constant.chatColor,
             bottomNavigationBar: context.watch<ChatProvider>().isFaseMode
                 ? const EmojiPickerBuilde()
                 : const SizedBox.shrink(),
@@ -77,7 +77,7 @@ class _ChatePageState extends State<ChatePage> {
                                 .read<ChatProvider>()
                                 .selectedItems
                                 .add(false);
-                            Message message = Message.fromJson(
+                            MessageModel message = MessageModel.fromJson(
                                 snapshot.data!.docs[index].data());
                             bool isme = message.from ==
                                 Constant.currentUsre.phoneNamber;
@@ -124,13 +124,20 @@ class _ChatePageState extends State<ChatePage> {
   }
 
   AppBar mainAppBar(String name) => AppBar(
+        elevation: 0,
+        foregroundColor: Constant.iconColor,
+        backgroundColor: Constant.appBarColor,
+        leadingWidth: 30, //!modify it to be resposive
         actions: [
           IconButton(
               onPressed: () async {
-                var p = await getApplicationDocumentsDirectory();
-                print(p.absolute.path);
+                context
+                    .read<ChatProvider>()
+                    .sendPushMessage('hi', 'dfdf', widget.friend.token);
               },
-              icon: const Icon(Icons.phone)),
+              icon: const Icon(
+                Icons.phone,
+              )),
           DropdownButton(
             icon: const Icon(Icons.more_vert),
             onChanged: (value) {
@@ -143,12 +150,17 @@ class _ChatePageState extends State<ChatePage> {
         title: Row(
           children: [
             const CircleAvatar(),
-            const SizedBox(width: 2),
-            Text(name),
+            const SizedBox(width: 10), //!modify it to be resposive
+            Text(
+              name,
+              style: const TextStyle(fontSize: 25, color: Colors.black),
+            ),
           ],
         ),
       );
   AppBar aternativeAppBar() => AppBar(
+        elevation: 0,
+        backgroundColor: Constant.appBarColor,
         leading: IconButton(
             onPressed: () {
               context.read<ChatProvider>().cancelOnTab();

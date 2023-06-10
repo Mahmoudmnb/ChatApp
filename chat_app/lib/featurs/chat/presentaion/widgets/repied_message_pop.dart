@@ -5,7 +5,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../domain/entities/message.dart';
 
 class RepliedMessagePop extends StatelessWidget {
-  final Message message;
+  final MessageModel message;
   final bool isme;
   final String chatId;
   const RepliedMessagePop({

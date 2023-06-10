@@ -2,15 +2,20 @@
 class UserEntity {
   final String name;
   final String phoneNamber;
+  final String token;
   String? imgUrl;
 
   UserEntity({
     required this.name,
     required this.phoneNamber,
+    required this.token,
     this.imgUrl,
   });
   factory UserEntity.fromJson(Map<String, dynamic> map) {
     return UserEntity(
-        imgUrl: map['imgUrl'], name: map['name'], phoneNamber: map['number']);
+        token: map['token'],
+        imgUrl: map['imgUrl'],
+        name: map['name'],
+        phoneNamber: map['number']);
   }
 }

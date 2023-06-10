@@ -13,7 +13,7 @@ import '../../domain/entities/message.dart';
 
 class ImagePop extends StatefulWidget {
   DownloadTask? task;
-  final Message message;
+  final MessageModel message;
   final String chatId;
   ImagePop({
     Key? key,
@@ -208,7 +208,7 @@ class _ImagePopState extends State<ImagePop> {
                 )));
   }
 
-  downloadImage(Message message) async {
+  downloadImage(MessageModel message) async {
     bool isMe = message.from == Constant.currentUsre.phoneNamber;
     if (!isMe && message.reciverPath == null && message.text != '') {
       widget.task = await downloadManager.addDownload(
