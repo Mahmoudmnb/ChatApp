@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:chat_app/core/constant.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -19,11 +21,9 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
- late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+  String currentFriendNum = '';
   @override
   void initState() {
-    flutterLocalNotificationsPlugin = 
-        FlutterLocalNotificationsPlugin();
     getPermision();
     initInfo();
     super.initState();
@@ -32,19 +32,16 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     var data = FirebaseFirestore.instance
-        .collection('messages')
+        .collection('users')
+        .doc(Constant.currentUsre.phoneNamber)
+        .collection('friends')
         .snapshots(includeMetadataChanges: true);
     return Scaffold(
       appBar: !context.watch<ChatProvider>().isConvertedMode
           ? AppBar(
               title: const Text('Chat App'),
               actions: [
-                IconButton(
-                    onPressed: () {
-                      context.read<ChatProvider>().sendPushMessage(
-                          'ho', 'how are you ', Constant.currentUsre.token);
-                    },
-                    icon: const Icon(Icons.search))
+                IconButton(onPressed: () {}, icon: const Icon(Icons.search))
               ],
             )
           : AppBar(
@@ -63,30 +60,36 @@ class _HomePageState extends State<HomePage> {
                 return ListView.builder(
                   itemCount: snapshot.data!.docs.length,
                   itemBuilder: (context, index) {
-                    print(snapshot.data!.docs[index].data());
                     return Column(
                       children: [
                         Padding(
                           padding: const EdgeInsets.only(
                               top: 10, left: 10, right: 10),
                           child: ListTile(
-                            trailing: StreamBuilder(
-                              stream: FirebaseFirestore.instance
-                                  .collection('messages')
-                                  .doc(snapshot.data!.docs[index].id)
-                                  .collection('msg')
-                                  .where('to',
-                                      isEqualTo:
-                                          Constant.currentUsre.phoneNamber)
-                                  .where('isReseved', isEqualTo: false)
-                                  .snapshots(),
-                              builder: (context, snapshot) {
-                                return CircleAvatar(
-                                  child: Text(
-                                      (snapshot.data?.docs.length).toString()),
-                                );
-                              },
-                            ),
+                            trailing: snapshot.data!.docs.isNotEmpty
+                                ? StreamBuilder(
+                                    stream: FirebaseFirestore.instance
+                                        .collection('messages')
+                                        .doc(snapshot.data!.docs[index]
+                                            .data()['chatId'])
+                                        .collection('msg')
+                                        .where('to',
+                                            isEqualTo: Constant
+                                                .currentUsre.phoneNamber)
+                                        .where('isReseved', isEqualTo: false)
+                                        .snapshots(),
+                                    builder: (context, snapshot1) {
+                                      return snapshot1.data != null &&
+                                              snapshot1.data!.docs.isNotEmpty
+                                          ? CircleAvatar(
+                                              child: Text(
+                                                  (snapshot1.data?.docs.length)
+                                                      .toString()),
+                                            )
+                                          : const SizedBox.shrink();
+                                    },
+                                  )
+                                : const SizedBox.shrink(),
                             onTap: () async {
                               Map<String, dynamic> map = {
                                 'token': snapshot.data!.docs[index]
@@ -114,11 +117,14 @@ class _HomePageState extends State<HomePage> {
                               String chatId = await context
                                   .read<ChatProvider>()
                                   .createChat();
-                              Navigator.of(context).push(MaterialPageRoute(
-                                builder: (context) => ChatePage(
-                                    chatId: chatId,
-                                    friend: UserEntity.fromJson(map)),
-                              ));
+                              currentFriendNum = map['number'];
+                              Navigator.of(context)
+                                  .push(MaterialPageRoute(
+                                    builder: (context) => ChatePage(
+                                        chatId: chatId,
+                                        friend: UserEntity.fromJson(map)),
+                                  ))
+                                  .then((value) => currentFriendNum = '');
                             },
                             leading: const CircleAvatar(
                               backgroundColor: Colors.pinkAccent,
@@ -163,18 +169,21 @@ class _HomePageState extends State<HomePage> {
                             title:
                                 Text(snapshot.data!.docs[index].data()['name']),
                             onTap: () async {
-                              context.read<ChatProvider>().friend =
-                                  UserEntity.fromJson(
-                                      snapshot.data!.docs[index].data());
+                              UserEntity friend = UserEntity.fromJson(
+                                  snapshot.data!.docs[index].data());
+                              context.read<ChatProvider>().friend = friend;
                               String chatId = await context
                                   .read<ChatProvider>()
                                   .createChat();
-                              Navigator.of(context).push(MaterialPageRoute(
-                                builder: (context) => ChatePage(
-                                    chatId: chatId,
-                                    friend: UserEntity.fromJson(
-                                        snapshot.data!.docs[index].data())),
-                              ));
+                              currentFriendNum = friend.phoneNamber;
+                              Navigator.of(context)
+                                  .push(MaterialPageRoute(
+                                    builder: (context) => ChatePage(
+                                        chatId: chatId,
+                                        friend: UserEntity.fromJson(
+                                            snapshot.data!.docs[index].data())),
+                                  ))
+                                  .then((value) => currentFriendNum = '');
                             },
                           ),
                         )
@@ -191,35 +200,51 @@ class _HomePageState extends State<HomePage> {
     var androidSettings =
         const AndroidInitializationSettings('@mipmap/ic_launcher');
     var settings = InitializationSettings(android: androidSettings);
-
+    late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+        FlutterLocalNotificationsPlugin();
     flutterLocalNotificationsPlugin.initialize(
       settings,
-      onDidReceiveNotificationResponse: (details) => print('on click'),
-      onDidReceiveBackgroundNotificationResponse: (details) => print('object'),
+      onDidReceiveNotificationResponse: (details) => print(details),
     );
-    FirebaseMessaging.onMessage.listen((event) {
-      print(event);
-      BigTextStyleInformation bigTextStyleInformation = BigTextStyleInformation(
-        event.notification!.body.toString(),
-        htmlFormatBigText: true,
-        contentTitle: event.notification!.title.toString(),
-        htmlFormatContent: true,
-      );
-      AndroidNotificationDetails androidNotificationDetails =
-          AndroidNotificationDetails(
-        'dbfood',
-        'dbfood',
-        importance: Importance.high,
-        styleInformation: bigTextStyleInformation,
-        priority: Priority.high,
-        playSound: true,
-      );
-      NotificationDetails details =
-          NotificationDetails(android: androidNotificationDetails);
-      flutterLocalNotificationsPlugin.show(
-          0, event.notification!.title, event.notification!.body, details,
-          payload: event.data['title']);
-      print('event');
+    FirebaseMessaging.onMessage.listen((message) {
+      if (message.data['senderNum'] != currentFriendNum) {
+        BigTextStyleInformation bigTextStyleInformation =
+            BigTextStyleInformation(
+          message.notification!.body.toString(),
+          htmlFormatBigText: true,
+          contentTitle: message.notification!.title.toString(),
+          htmlFormatContent: true,
+        );
+        AndroidNotificationDetails androidNotificationDetails =
+            AndroidNotificationDetails(
+          'dbfood',
+          'dbfood',
+          importance: Importance.high,
+          styleInformation: bigTextStyleInformation,
+          priority: Priority.high,
+          playSound: true,
+        );
+        NotificationDetails details =
+            NotificationDetails(android: androidNotificationDetails);
+        flutterLocalNotificationsPlugin.show(
+            0, message.notification!.title, message.notification!.body, details,
+            payload: message.data['title']);
+      }
+    });
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      if (currentFriendNum != '') {
+        Navigator.of(context).pushReplacement(MaterialPageRoute(
+          builder: (context) => ChatePage(
+              chatId: message.data['chatId'],
+              friend: UserEntity.fromJson(json.decode(message.data['friend']))),
+        ));
+      } else {
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (context) => ChatePage(
+              chatId: message.data['chatId'],
+              friend: UserEntity.fromJson(json.decode(message.data['friend']))),
+        ));
+      }
     });
   }
 
@@ -227,11 +252,11 @@ class _HomePageState extends State<HomePage> {
     FirebaseMessaging messaging = FirebaseMessaging.instance;
     NotificationSettings settings = await messaging.requestPermission(
       alert: true,
-      announcement: false,
+      announcement: true,
       badge: true,
-      carPlay: false,
-      criticalAlert: false,
-      provisional: false,
+      carPlay: true,
+      criticalAlert: true,
+      provisional: true,
       sound: true,
     );
     print('User granted permission: ${settings.authorizationStatus}');

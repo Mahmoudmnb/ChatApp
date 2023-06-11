@@ -131,17 +131,21 @@ class _ChatePageState extends State<ChatePage> {
         actions: [
           IconButton(
               onPressed: () async {
-                context
-                    .read<ChatProvider>()
-                    .sendPushMessage('hi', 'dfdf', widget.friend.token);
+                // Navigator.of(GlobalVariable.navState.currentContext!)
+                //     .push(MaterialPageRoute(
+                //   builder: (context) => ChatePage(
+                //       chatId: message.data['chatId'],
+                //       friend: UserEntity.fromJson(message.data['friend'])),
+                // ));
               },
               icon: const Icon(
                 Icons.phone,
+                color: Colors.black,
               )),
           DropdownButton(
             icon: const Icon(Icons.more_vert),
             onChanged: (value) {
-              print('object');
+              if (value == 5) print('object');
               //! add image url to user
             },
             items: const [DropdownMenuItem(child: Text('data'))],

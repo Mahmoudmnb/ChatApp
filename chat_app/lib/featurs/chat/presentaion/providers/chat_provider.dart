@@ -1,21 +1,24 @@
+// ignore_for_file: depend_on_referenced_packages
+
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:chat_app/featurs/chat/domain/entities/message.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+
+import 'package:chat_app/featurs/chat/domain/entities/message.dart';
 
 import '../../../../core/constant.dart';
 import '../../../auth/domain/entities/user.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class ChatProvider extends ChangeNotifier {
   FocusNode focusNode = FocusNode(debugLabel: 'mnb');
+  Map<String, int> numOfNewMessages = {};
   final Map<String, double> _imageProgressValue = {};
   get imgeProgressValue => _imageProgressValue;
   TextEditingController controller = TextEditingController();
@@ -28,7 +31,6 @@ class ChatProvider extends ChangeNotifier {
   bool isConvertedMode = false;
   List<String> fromMeSelectedMessage = [];
   List<String> toMeSelectedMessage = [];
-
   get selectedItem => selectedItems;
   List<MessageModel> copiedMessages = [];
   MessageModel? selectedMessage;
@@ -91,13 +93,59 @@ class ChatProvider extends ChangeNotifier {
         'toName': friend!.name,
         'to': friend!.phoneNamber
       });
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(Constant.currentUsre.phoneNamber)
+          .collection('friends')
+          .doc(friend!.phoneNamber)
+          .set({
+        'to': friend!.phoneNamber,
+        'toToken': friend!.token,
+        'toName': friend!.name,
+        'chatId': chatId.id
+      });
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(friend!.phoneNamber)
+          .collection('friends')
+          .doc(Constant.currentUsre.phoneNamber)
+          .set({
+        'to': Constant.currentUsre.phoneNamber,
+        'toToken': Constant.currentUsre.token,
+        'toName': Constant.currentUsre.name,
+        'chatId': chatId.id
+      });
       return Future.value(chatId.id);
     } else {
+      String chatId = '';
       if (first.docs.isNotEmpty) {
-        return first.docs.first.id;
+        chatId = first.docs.first.id;
       } else {
-        return second.docs.first.id;
+        chatId = second.docs.first.id;
       }
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(Constant.currentUsre.phoneNamber)
+          .collection('friends')
+          .doc(friend!.phoneNamber)
+          .set({
+        'to': friend!.phoneNamber,
+        'toToken': friend!.token,
+        'toName': friend!.name,
+        'chatId': chatId,
+      });
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(friend!.phoneNamber)
+          .collection('friends')
+          .doc(Constant.currentUsre.phoneNamber)
+          .set({
+        'to': Constant.currentUsre.phoneNamber,
+        'toToken': Constant.currentUsre.token,
+        'toName': Constant.currentUsre.name,
+        'chatId': chatId
+      });
+      return chatId;
     }
   }
 
@@ -141,7 +189,7 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
-  editOrSendOnTab(String chatId, UserEntity friend, {Message? message}) async {
+  editOrSendOnTab(String chatId, UserEntity friend) async {
     if (editMode) {
       setEditMode = false;
       FirebaseFirestore.instance
@@ -167,6 +215,13 @@ class ChatProvider extends ChangeNotifier {
             date: Timestamp.now(),
             from: Constant.currentUsre.phoneNamber,
             to: friend.phoneNamber);
+        sendPushMessage(
+            controller.text,
+            Constant.currentUsre.name,
+            friend.token,
+            Constant.currentUsre.phoneNamber,
+            chatId,
+            Constant.currentUsre);
         controller.text = '';
         _inputText = '';
         emojiText = '';
@@ -393,11 +448,10 @@ class ChatProvider extends ChangeNotifier {
     if (r != null) {
       pickedImage = File(r.path);
     }
-    var decodedImage =
-        await decodeImageFromList(pickedImage!.readAsBytesSync());
-    print(decodedImage.width);
-    print(decodedImage.height);
+
     if (pickedImage != null) {
+      var decodedImage =
+          await decodeImageFromList(pickedImage!.readAsBytesSync());
       MessageModel message = MessageModel(
           imageHeight: decodedImage.height * 1.0,
           imageWidth: decodedImage.width * 1.0,
@@ -419,7 +473,6 @@ class ChatProvider extends ChangeNotifier {
       var comImage = await FlutterImageCompress.compressAndGetFile(
           pickedImage!.absolute.path,
           '/data/user/0/com.example.chat_app/cache/${s.id}.jpg');
-
       File pickeImageFile = File(comImage!.path);
       FirebaseStorage.instance
           .ref('chat')
@@ -438,6 +491,8 @@ class ChatProvider extends ChangeNotifier {
             'isSent': true,
             'text': await event.ref.getDownloadURL()
           });
+          sendPushMessage('Image', Constant.currentUsre.name, friend!.token,
+              Constant.currentUsre.phoneNamber, chatId, friend!);
           _imageProgressValue[s.id] = 0;
         }
       });
@@ -494,9 +549,10 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void sendPushMessage(String body, String title, String token) async {
+  void sendPushMessage(String body, String title, String token,
+      String senderNum, String chatId, UserEntity localFreind) async {
     try {
-      var s = await http.post(
+      await http.post(
         Uri.parse('https://fcm.googleapis.com/fcm/send'),
         headers: <String, String>{
           'Content-Type': 'application/json',
@@ -508,12 +564,16 @@ class ChatProvider extends ChangeNotifier {
             'notification': <String, dynamic>{
               'body': body,
               'title': title,
+              'android_channel_id': 'dbfood'
             },
             'priority': 'high',
             'data': <String, dynamic>{
               'click_action': 'FLUTTER_NOTIFICATION_CLICK',
               'id': '1',
-              'status': 'done'
+              'status': 'done',
+              'senderNum': senderNum,
+              'chatId': chatId,
+              'friend': json.encode(localFreind.toJson())
             },
             "to": token,
           },

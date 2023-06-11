@@ -18,4 +18,12 @@ class UserEntity {
         name: map['name'],
         phoneNamber: map['number']);
   }
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'number': phoneNamber,
+      'token': token,
+      'imgUrl': imgUrl ?? ''
+    };
+  }
 }

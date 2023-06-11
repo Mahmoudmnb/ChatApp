@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MessageModel {
+  int timeForSend;
   double imageHeight;
   double imageWidth;
   final String nameOfImage;
@@ -23,6 +24,7 @@ class MessageModel {
   bool isReseved;
 
   MessageModel({
+    this.timeForSend = 0,
     this.imageHeight = 0,
     this.imageWidth = 0,
     this.nameOfImage = '',

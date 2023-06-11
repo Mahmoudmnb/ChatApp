@@ -1,17 +1,23 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+
+import 'package:chat_app/featurs/auth/domain/entities/user.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import '../../domain/entities/message.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+
+import '../../domain/entities/message.dart';
 
 class MessagePop extends StatelessWidget {
   final bool isme;
   final MessageModel message;
   final String chatId;
+  final UserEntity friend;
   const MessagePop({
     Key? key,
-    required this.chatId,
     required this.isme,
     required this.message,
+    required this.chatId,
+    required this.friend,
   }) : super(key: key);
   @override
   Widget build(BuildContext context) {
@@ -26,6 +32,12 @@ class MessagePop extends StatelessWidget {
             .update({'isReseved': true});
       }
     }
+    // else {
+    //   if (!message.isReseved) {
+    //     context.read<ChatProvider>().sendPushMessage(
+    //         message.text, Constant.currentUsre.name, friend.token);
+    //   }
+    // }
     return Container(
       margin: const EdgeInsets.all(2),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),

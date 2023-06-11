@@ -64,6 +64,7 @@ class MessageRow extends StatelessWidget {
                             ? RepliedMessagePop(
                                 chatId: chatId, isme: isme, message: message)
                             : MessagePop(
+                              friend: friend,
                                 chatId: chatId,
                                 isme: isme,
                                 message: message,
